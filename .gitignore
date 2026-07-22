@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# trained models (regenerate with: python ml/train.py)
+ml/models/*.pkl
+
+# generated sample data
+simulator/sample_telemetry.json
+
+# Node / Next.js
+node_modules/
+.next/
+dashboard/.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# local tool config / build info
+.claude/settings.local.json
+dashboard/tsconfig.tsbuildinfo
