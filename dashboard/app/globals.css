@@ -11,7 +11,11 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  background: var(--bg);
+  /* same moody radial backdrop as the boot sequence — Landing/Boot each paint
+     their own full-viewport background over this, so in practice this only
+     shows through on the dashboard (app) screens. */
+  background: radial-gradient(ellipse at 50% 45%, #180b0e, #07080a 70%);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-space), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -29,6 +33,46 @@ table { border-collapse: collapse; }
 
 @keyframes afcpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @keyframes afcblink { 0%, 100% { opacity: 0.95; } 50% { opacity: 0.2; } }
+
+/* landing / boot sequence */
+@keyframes afcgridpan { 0% { background-position: 0 0; } 100% { background-position: 44px 44px; } }
+@keyframes afcfloat { 0%, 100% { transform: translateY(0) rotate(45deg); } 50% { transform: translateY(-10px) rotate(45deg); } }
+@keyframes afcfade { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes afcring { 0% { transform: rotate(0deg); opacity: .5; } 50% { opacity: 1; } 100% { transform: rotate(360deg); opacity: .5; } }
+@keyframes afcscan { 0% { left: -30%; } 100% { left: 130%; } }
+@keyframes afcbootbar { 0% { width: 0%; } 100% { width: 100%; } }
+@keyframes afcbootfade { 0% { opacity: 0; transform: scale(.96); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes afcspin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+@keyframes afcglitch {
+  0%, 92%, 100% { transform: translate(0); }
+  93% { transform: translate(-2px, 1px); } 94% { transform: translate(2px, -1px); }
+  95% { transform: translate(-1px, -1px); } 96% { transform: translate(1px, 1px); }
+  97% { transform: translate(-2px, 0); }
+}
+@keyframes afcglitchR {
+  0%, 92%, 100% { opacity: 0; transform: translate(0); }
+  93% { opacity: .8; transform: translate(3px, -1px); }
+  96% { opacity: .8; transform: translate(-3px, 1px); } 97% { opacity: 0; }
+}
+@keyframes afcglitchC {
+  0%, 92%, 100% { opacity: 0; transform: translate(0); }
+  94% { opacity: .7; transform: translate(-3px, 1px); }
+  96% { opacity: .7; transform: translate(3px, -1px); } 97% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .afc-anim, .afc-anim * { animation: none !important; }
+}
+
+.afc-start-btn {
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.afc-start-btn:hover {
+  box-shadow: 0 12px 44px rgba(255, 56, 74, .6);
+  transform: translateY(-1px);
+}
+.afc-start-btn:active {
+  transform: translateY(0);
+}
 
 .panel {
   background: var(--panel);

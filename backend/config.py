@@ -38,6 +38,20 @@ PARK_STEP = 2                    # max nodes parked or woken per tick (anti-thra
 MIN_ACTIVE_NODES = 20            # never park below this many active nodes
 REPAIR_TICKS = 10                # ticks a drained failing node stays offline to heal
 
+# --- Kubernetes execution (opt-in via K8S_ENABLED=1; AI mode only) ---
+# The kind cluster is a scaled-down live mirror of the 64-node simulated fleet:
+# a laptop can't run 64 pods, so the AI scheduler's capacity (8..64) is mapped
+# proportionally onto a real Deployment's replica count (1..K8S_MAX_REPLICAS).
+K8S_NAMESPACE = "arenaflow"
+K8S_DEPLOYMENT = "arenaflow-gameserver"
+K8S_MAX_REPLICAS = 8             # cap on real pods (fits a local kind cluster)
+K8S_NODE_DIVISOR = 8             # replicas = clamp(round(cap_ai / this), 1, MAX)
+
+
+def replicas_for(cap_ai: int) -> int:
+    """Map simulated AI capacity (MIN_NODES..MAX_NODES) to real pod replicas."""
+    return max(1, min(K8S_MAX_REPLICAS, round(cap_ai / K8S_NODE_DIVISOR)))
+
 
 def status_for(cpu_pct: float, latency_ms: float, risk: float) -> str:
     """Map telemetry + failure risk to the dashboard's 5-level status."""

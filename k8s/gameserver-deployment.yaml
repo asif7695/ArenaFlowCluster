@@ -1,0 +1,32 @@
+# The real workload ArenaFlowCluster scales. Each replica stands in for a
+# game-server pod; the AI scheduler patches this Deployment's replica count to
+# mirror its forecast-driven capacity (see backend/k8s_executor.py). Uses the
+# tiny `pause` image so it runs many replicas cheaply on a local kind cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arenaflow-gameserver
+  namespace: arenaflow
+  labels:
+    app: arenaflow-gameserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arenaflow-gameserver
+  template:
+    metadata:
+      labels:
+        app: arenaflow-gameserver
+    spec:
+      terminationGracePeriodSeconds: 2
+      containers:
+        - name: gameserver
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 20m
+              memory: 32Mi

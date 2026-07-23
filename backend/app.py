@@ -13,6 +13,7 @@ frontend dev. Endpoints:
   GET  /forecast                   observed + predicted demand, region forecast
   GET  /comparison                 AI vs static cost / incidents / utilization
   GET  /alerts                     active health alerts
+  GET  /k8s                        live Kubernetes execution state (opt-in)
   POST /control                    { running?, mode?, scenario? }
 """
 from __future__ import annotations
@@ -41,8 +42,11 @@ def health():
     s = snap()
     return jsonify({
         "ok": True, "ready": s.get("ready", False), "tick": s.get("tick", 0),
-        "mode": s.get("mode"), "scenario": s.get("scenario"),
-        "running": s.get("running"), "model_mode": s.get("model_mode"),
+        # mode/scenario/running come from the live engine, not the snapshot: the
+        # snapshot is only rewritten inside _tick(), which is skipped entirely
+        # while paused, so it would otherwise freeze "running": true forever.
+        "mode": ENGINE.mode, "scenario": ENGINE.scenario,
+        "running": ENGINE.running, "model_mode": s.get("model_mode"),
     })
 
 
@@ -80,7 +84,8 @@ def summary():
     return jsonify({
         "summary": s.get("summary", {}), "counts": s.get("counts", {}),
         "tick": s.get("tick", 0), "timestamp": s.get("timestamp"),
-        "mode": s.get("mode"), "scenario": s.get("scenario"), "running": s.get("running"),
+        # live engine state, not the frozen snapshot copy — see /health for why.
+        "mode": ENGINE.mode, "scenario": ENGINE.scenario, "running": ENGINE.running,
         "demand": s.get("demand"), "demand_history": s.get("demand_history", []),
         "model_mode": s.get("model_mode"),
     })
@@ -151,6 +156,13 @@ def comparison():
 def alerts():
     s = snap()
     return jsonify({"alerts": s.get("alerts", []), "counts": s.get("counts", {})})
+
+
+@app.get("/k8s")
+def k8s():
+    # live real-cluster execution state (orchestrator-native mode); {enabled:false}
+    # when K8S_ENABLED is not set.
+    return jsonify(snap().get("k8s", {"enabled": False}))
 
 
 @app.post("/control")

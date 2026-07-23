@@ -1,0 +1,28 @@
+# ArenaFlowCluster — full stack in one command:
+#   docker compose up --build
+# Then open http://localhost:3000 (dashboard) — it talks to the backend on :5000.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5000:5000"
+    # to enable real Kubernetes execution, set K8S_ENABLED=1 and mount a kubeconfig:
+    # environment:
+    #   - K8S_ENABLED=1
+    # volumes:
+    #   - ${HOME}/.kube:/root/.kube:ro
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+      args:
+        # the browser fetches the API directly, so this is the HOST url, not the
+        # compose service name
+        NEXT_PUBLIC_API_BASE: http://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

@@ -13,15 +13,15 @@ const NAV: [View, string][] = [
 ];
 
 export default function Sidebar() {
-  const { snap, view, setView, control, online, useMock } = useDash();
+  const { snap, view, setView, control, online, useMock, goHome } = useDash();
   const mode = snap.mode;
 
   return (
     <aside style={{ width: 236, flex: "none", display: "flex", flexDirection: "column",
       background: "linear-gradient(180deg,#0c0d10,#0a0b0d)", borderRight: `1px solid ${C.border}` }}>
-      {/* logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "18px 18px 16px",
-        borderBottom: `1px solid ${C.border2}` }}>
+      {/* logo — click to return to the front page */}
+      <button onClick={goHome} title="Back to front page" style={{ display: "flex", alignItems: "center", gap: 11,
+        padding: "18px 18px 16px", borderBottom: `1px solid ${C.border2}`, textAlign: "left", cursor: "pointer" }}>
         <div style={{ position: "relative", width: 30, height: 30, flex: "none" }}>
           <div style={{ position: "absolute", inset: 0, background: C.accent, borderRadius: 7,
             transform: "rotate(45deg)", boxShadow: "0 0 14px rgba(255,56,74,.6)" }} />
@@ -34,7 +34,7 @@ export default function Sidebar() {
             CLUSTER&nbsp;INTELLIGENCE
           </div>
         </div>
-      </div>
+      </button>
 
       {/* nav */}
       <nav style={{ display: "flex", flexDirection: "column", gap: 3, padding: "14px 12px", flex: 1, overflowY: "auto" }}>
@@ -83,6 +83,27 @@ export default function Sidebar() {
           </span>
           <span className="mono" style={{ marginLeft: "auto", fontSize: 10, color: C.muted3 }}>t+{snap.tick}</span>
         </div>
+
+        {/* real Kubernetes execution — only shown when the backend runs with
+            K8S_ENABLED=1; proves decisions drive actual pods */}
+        {snap.k8s?.enabled && (() => {
+          const k = snap.k8s;
+          const live = !!k.ok;
+          const col = live ? C.green : "#f2c14e";
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "9px 10px",
+              background: C.panel2, border: `1px solid ${live ? "rgba(34,197,139,.3)" : C.border}`, borderRadius: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none",
+                background: col, boxShadow: `0 0 8px ${col}`, animation: live ? "afcpulse 1.4s infinite" : "none" }} />
+              <span className="mono" style={{ fontSize: 10, color: C.muted }}>
+                {live ? "LIVE CLUSTER" : "CLUSTER DOWN"}
+              </span>
+              <span className="mono" style={{ marginLeft: "auto", fontSize: 10, color: live ? C.green : C.muted3 }}>
+                {live ? `${k.ready ?? 0}/${k.desired ?? 0} pods · ${k.nodes ?? "?"}n` : "unreachable"}
+              </span>
+            </div>
+          );
+        })()}
       </div>
     </aside>
   );

@@ -18,8 +18,11 @@ simulator ──▶ ML models ──▶ scheduler ──▶ Flask API ──▶ 
               anomaly)       baseline)
 ```
 
-Real Kubernetes wiring (kind/minikube) is a documented **stretch goal**; the
-simulated demo is complete and verified.
+The simulated demo is complete and verified. **Real Kubernetes execution**
+(kind/minikube) and **Docker packaging** are also implemented as **opt-in** layers
+— see [Run with Docker](#run-with-docker-one-command) and
+[Run on Kubernetes (kind)](#run-on-kubernetes-kind--orchestrator-native-execution).
+With the K8s flag off, the system runs exactly as the pure-simulation demo.
 
 ---
 
@@ -80,6 +83,67 @@ python simulator.py --ticks 200 --out sample_telemetry.json
 
 ---
 
+## Run with Docker (one command)
+
+Whole stack, no local Python/Node needed:
+
+```bash
+docker compose up --build      # backend :5000 + dashboard :3000
+# open http://localhost:3000
+```
+
+The backend image trains the ML models at build time, so it serves
+`model_mode: "trained"` out of the box. The dashboard image is a production Next
+build; it calls the backend at `http://localhost:5000` (the browser reaches it on
+the host, so that URL is baked in via `NEXT_PUBLIC_API_BASE`).
+
+---
+
+## Run on Kubernetes (kind) — orchestrator-native execution
+
+This is the concept note's headline **"decisions are executed through the
+Kubernetes API"**, made real: the AI scheduler's forecast-driven capacity drives
+the replica count of a real `arenaflow-gameserver` Deployment, so you can watch
+pods spin up and down in response to the prediction.
+
+```bash
+# 1. create a local cluster + apply RBAC/workload (installs kind if missing)
+powershell -ExecutionPolicy Bypass -File k8s\setup.ps1      # Windows
+bash k8s/setup.sh                                           # macOS/Linux/Git Bash
+
+# 2. run the backend against it (opt-in via the flag)
+K8S_ENABLED=1 python backend/app.py        # ($env:K8S_ENABLED="1" on PowerShell)
+
+# 3. watch real pods track the AI forecast as demand cycles
+kubectl get pods -n arenaflow -w
+curl localhost:5000/k8s                     # {"ok":true,"desired":N,"ready":N,...}
+```
+
+The dashboard sidebar shows a **LIVE CLUSTER** row (real `ready/desired` pods +
+node count) whenever `K8S_ENABLED=1`.
+
+**Honest scaling note:** a laptop can't run 64 pods, so the real Deployment is a
+*proportional, capped mirror* of the simulated fleet —
+`replicas = clamp(round(cap_ai / 8), 1, 8)` (`backend/config.py:replicas_for`).
+The dashboard still shows the full 64-node simulation; the cluster is the live,
+scaled-down proof that decisions execute.
+
+**Least-privilege RBAC** (`k8s/rbac.yaml`) — the scheduler's ServiceAccount can
+*only* scale the gameserver Deployment and read pods/nodes:
+
+```bash
+kubectl auth can-i patch deployments/scale -n arenaflow \
+  --as=system:serviceaccount:arenaflow:arenaflow-scheduler   # yes
+kubectl auth can-i delete pods -n arenaflow \
+  --as=system:serviceaccount:arenaflow:arenaflow-scheduler   # no
+```
+
+Everything K8s is **opt-in and fail-safe**: with `K8S_ENABLED` unset (or no
+cluster reachable) the backend runs exactly as the pure-simulation demo — the
+executor degrades to a no-op. Teardown: `kind delete cluster --name arenaflow`.
+
+---
+
 ## Data contract
 
 The three shapes wired through the whole pipeline:
@@ -111,6 +175,7 @@ The three shapes wired through the whole pipeline:
 | `GET /forecast` | observed + predicted demand, per-region forecast |
 | `GET /comparison` | AI vs static cost / incidents / utilization |
 | `GET /alerts` | active health alerts |
+| `GET /k8s` | live Kubernetes execution state (`{enabled:false}` unless `K8S_ENABLED=1`) |
 | `POST /control` | `{ running?, mode?, scenario? }` — drives the dashboard's toggles |
 
 ---
@@ -165,8 +230,8 @@ cd ml      && python -m pytest -q                           # model accuracy (2 
 
 ## Tech stack
 Python · Flask · scikit-learn · pandas/NumPy · JavaScript/TypeScript · Next.js ·
-Chart.js · React. (Docker / Kubernetes kind-minikube: stretch goal, not required
-for the demo.)
+Chart.js · React · Docker · Kubernetes (kind) via the official `kubernetes` client.
+Docker + K8s are opt-in layers over the simulated core (not required for the demo).
 
 ## Security posture (concept note)
 Least-privilege scaling actions, TLS-terminated API in production, telemetry input

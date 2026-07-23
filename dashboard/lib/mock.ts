@@ -125,6 +125,9 @@ function buildSnapshot(T: number) {
         lat: Array.from({ length: 24 }, (_, k) => Math.round(n.latency_ms + Math.sin(k) * 8)),
       }])
     ),
+    // real-cluster execution is opt-in (backend K8S_ENABLED=1); the mock never
+    // has one, so it always reports disabled.
+    k8s: { enabled: false } as import("./types").K8sState,
   };
 }
 

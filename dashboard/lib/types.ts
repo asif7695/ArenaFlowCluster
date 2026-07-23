@@ -80,3 +80,17 @@ export interface Counts {
   critical: number;
   offline: number;
 }
+
+/** Live real-cluster execution state (GET /k8s). enabled:false when K8S_ENABLED unset. */
+export interface K8sState {
+  enabled: boolean;
+  ok?: boolean;
+  context?: string | null;
+  namespace?: string;
+  deployment?: string;
+  desired?: number | null;
+  ready?: number | null;
+  pods?: number | null;
+  nodes?: number | null;
+  error?: string | null;
+}

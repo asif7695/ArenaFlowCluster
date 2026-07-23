@@ -1,0 +1,9 @@
+# dashboard build context (context: ./dashboard) — node_modules + .next are
+# rebuilt inside the image; excluding them keeps the context small and avoids
+# shipping a stale/host-specific build.
+node_modules
+.next
+.env.local
+tsconfig.tsbuildinfo
+Dockerfile
+.dockerignore

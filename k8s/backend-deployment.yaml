@@ -1,0 +1,50 @@
+# OPTIONAL: run the ArenaFlowCluster backend INSIDE the cluster (fully
+# orchestrator-native — the scheduler uses in-cluster config + the least-privilege
+# ServiceAccount from rbac.yaml). The default demo runs the backend on the host and
+# talks to the cluster via kubeconfig, which is simpler; use this for the
+# "backend is itself a pod" story.
+#
+# Build + load the image into kind first:
+#   docker build -t arenaflow-backend:latest -f Dockerfile.backend .
+#   kind load docker-image arenaflow-backend:latest --name arenaflow
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arenaflow-backend
+  namespace: arenaflow
+  labels:
+    app: arenaflow-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arenaflow-backend
+  template:
+    metadata:
+      labels:
+        app: arenaflow-backend
+    spec:
+      serviceAccountName: arenaflow-scheduler   # least-privilege RBAC
+      containers:
+        - name: backend
+          image: arenaflow-backend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: K8S_ENABLED
+              value: "1"
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: arenaflow-backend
+  namespace: arenaflow
+spec:
+  selector:
+    app: arenaflow-backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+  # reach it from the host with:
+  #   kubectl -n arenaflow port-forward svc/arenaflow-backend 5000:5000

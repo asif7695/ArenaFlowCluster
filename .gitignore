@@ -5,8 +5,10 @@ __pycache__/
 venv/
 .pytest_cache/
 
-# trained models (regenerate with: python ml/train.py)
+# trained models (regenerate with: python ml/train.py) and their csv exports
+# (regenerate with: python ml/export_csv.py)
 ml/models/*.pkl
+ml/models/*.csv
 
 # generated sample data
 simulator/sample_telemetry.json

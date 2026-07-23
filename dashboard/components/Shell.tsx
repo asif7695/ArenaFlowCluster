@@ -1,5 +1,7 @@
 "use client";
 import { useDash } from "@/lib/store";
+import Landing from "./Landing";
+import Boot from "./Boot";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import StatBar from "./StatBar";
@@ -12,7 +14,12 @@ import Alerts from "./views/Alerts";
 import DecisionLog from "./views/DecisionLog";
 
 export default function Shell() {
-  const { view } = useDash();
+  const { view, phase } = useDash();
+
+  // front page -> boot sequence -> dashboard
+  if (phase === "landing") return <Landing />;
+  if (phase === "boot") return <Boot />;
+
   return (
     <div style={{ display: "flex", height: "100vh", width: "100%", overflow: "hidden" }}>
       <Sidebar />

@@ -25,6 +25,7 @@ import config as C
 import scheduler_ai
 import scheduler_static
 import consolidation
+import k8s_executor
 from cost import CostTracker
 from state import STORE
 
@@ -85,6 +86,11 @@ class Engine:
         # predictive node parking (AI mode only): node_id -> {"reason","since"}
         self.offline: dict[str, dict] = {}
 
+        # optional real-cluster execution (opt-in via K8S_ENABLED=1). Defensive:
+        # None when disabled, and a no-op executor if no cluster is reachable —
+        # the pure-simulation demo never depends on it.
+        self.k8s = k8s_executor.maybe_create(os.environ.get("K8S_ENABLED") == "1")
+
         # control (driven by POST /control from the dashboard)
         self.running = True
         self.mode = "ai"        # active scheduler shown live
@@ -109,6 +115,9 @@ class Engine:
     def start(self):
         if self._thread:
             return
+        # provision the real workload once (idempotent no-op when K8s is off/unreachable)
+        if self.k8s:
+            self.k8s.ensure_workload()
         # warm up so the first response already has history + trained context
         for _ in range(WINDOW + 12):
             self._tick()
@@ -213,6 +222,12 @@ class Engine:
                 nodes, target_active=cap_ai, current_offline=self.offline, timestamp=ts)
             dec_ai = dec_ai + park_decisions
 
+            # orchestrator-native execution: mirror AI capacity onto real pods.
+            # Rate-limited inside reconcile(); a no-op when K8s is off/unreachable.
+            if self.k8s and self.k8s.ok:
+                self.k8s.reconcile(
+                    cap_ai, [n["label"] for n in nodes if n["status"] == "critical"])
+
         for d in dec_ai:
             self.log_ai.appendleft(d)
             if d["action"] in ("scale_up", "scale_down"):
@@ -308,6 +323,7 @@ class Engine:
             "log_ai": list(self.log_ai), "log_static": list(self.log_static),
             "cost": cost,
             "node_history": node_hist,
+            "k8s": self.k8s.cluster_state() if self.k8s else {"enabled": False},
         }
 
 

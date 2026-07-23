@@ -1,0 +1,65 @@
+# Least-privilege service account for the ArenaFlowCluster scheduler.
+# Delivers the concept note's security claim: "RBAC-scoped Kubernetes service
+# accounts (least-privilege scaling actions)". The scheduler can ONLY scale the
+# gameserver Deployment and read pods/nodes for telemetry — it cannot create,
+# delete, or mutate anything else.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: arenaflow-scheduler
+  namespace: arenaflow
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: arenaflow-scheduler
+  namespace: arenaflow
+rules:
+  # read + scale the gameserver Deployment (the only write it is allowed)
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch", "update"]
+  # read-only telemetry
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+# node listing is cluster-scoped, so it needs a (read-only) ClusterRole binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: arenaflow-node-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: arenaflow-scheduler
+  namespace: arenaflow
+subjects:
+  - kind: ServiceAccount
+    name: arenaflow-scheduler
+    namespace: arenaflow
+roleRef:
+  kind: Role
+  name: arenaflow-scheduler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: arenaflow-node-reader
+subjects:
+  - kind: ServiceAccount
+    name: arenaflow-scheduler
+    namespace: arenaflow
+roleRef:
+  kind: ClusterRole
+  name: arenaflow-node-reader
+  apiGroup: rbac.authorization.k8s.io

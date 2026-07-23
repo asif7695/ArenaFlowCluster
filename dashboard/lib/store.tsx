@@ -7,6 +7,7 @@ import type { Mode, Scenario, NodeView, Alert } from "./types";
 
 export type Snap = ReturnType<typeof mockSnapshot>;
 export type View = "overview" | "node" | "forecast" | "compare" | "cost" | "alerts" | "decisions";
+export type Phase = "landing" | "boot" | "app";
 
 interface NodeDetail {
   node: NodeView;
@@ -24,13 +25,16 @@ interface Ctx {
   setSelected: (id: string) => void;
   nodeDetail: NodeDetail | null;
   control: (b: { running?: boolean; mode?: Mode; scenario?: Scenario }) => void;
+  phase: Phase;
+  startSim: () => void;
+  goHome: () => void;
 }
 
 const DashCtx = createContext<Ctx | null>(null);
 const FORCE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "1";
 
 async function fetchSnapshot(selected: string): Promise<Snap> {
-  const [summary, matrix, forecast, comparison, alerts, logAi, logStatic] = await Promise.all([
+  const [summary, matrix, forecast, comparison, alerts, logAi, logStatic, k8s] = await Promise.all([
     getJSON<any>("/summary"),
     getJSON<any>("/matrix"),
     getJSON<any>("/forecast"),
@@ -38,6 +42,7 @@ async function fetchSnapshot(selected: string): Promise<Snap> {
     getJSON<any>("/alerts"),
     getJSON<any>("/decisions?mode=ai&limit=40"),
     getJSON<any>("/decisions?mode=static&limit=40"),
+    getJSON<any>("/k8s").catch(() => ({ enabled: false })),
   ]);
   return {
     online: true,
@@ -62,6 +67,7 @@ async function fetchSnapshot(selected: string): Promise<Snap> {
     log_static: logStatic,
     cost: comparison.cost,
     node_history: {},
+    k8s,
   } as unknown as Snap;
 }
 
@@ -74,6 +80,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [snap, setSnap] = useState<Snap>(() => emptySnapshot());
   const [online, setOnline] = useState(false);
   const [useMock, setUseMock] = useState(FORCE_MOCK);
+  const [phase, setPhase] = useState<Phase>("landing");
   const [view, setView] = useState<View>("overview");
   const [selected, setSelected] = useState("node-27");
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null);
@@ -130,8 +137,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (!FORCE_MOCK) postControl(b).catch(() => {});
   }, []);
 
+  // landing -> boot -> app (the boot overlay animates for ~1.75s before the
+  // dashboard mounts, matching the design's initialization sequence)
+  const startSim = useCallback(() => {
+    setPhase("boot");
+    setTimeout(() => setPhase("app"), 1750);
+  }, []);
+
+  // jump straight back to the landing page (no boot sequence — that only
+  // plays on the way into the dashboard)
+  const goHome = useCallback(() => setPhase("landing"), []);
+
   return (
-    <DashCtx.Provider value={{ snap, online, useMock, view, setView, selected, setSelected, nodeDetail, control }}>
+    <DashCtx.Provider value={{ snap, online, useMock, view, setView, selected, setSelected,
+      nodeDetail, control, phase, startSim, goHome }}>
       {children}
     </DashCtx.Provider>
   );
