@@ -10,12 +10,27 @@ crossed the way Kubernetes' Horizontal Pod Autoscaler does. A live dashboard run
 the **AI scheduler against a dumb static baseline** over identical simulated
 traffic, showing the cost and reliability difference side by side.
 
-This repo is a fully-simulated end-to-end prototype. One-directional pipeline:
+This repo is a fully-simulated end-to-end prototype. One-directional pipeline —
+each stage has a fail-safe fallback (dashed), and Docker/Kubernetes are **opt-in**
+layers over the simulated core:
 
-```
-simulator ──▶ ML models ──▶ scheduler ──▶ Flask API ──▶ Next.js dashboard
- (telemetry)  (forecast +   (AI + static   (REST, CORS)  (7 screens, polling)
-              anomaly)       baseline)
+```mermaid
+graph LR
+  sim[Simulator<br/>64-node telemetry]
+  ml[ML models<br/>forecast + anomaly]
+  sched[Scheduler<br/>AI + static baseline]
+  api[Flask API<br/>REST + CORS]
+  dash[Next.js dashboard<br/>7 screens, polling]
+
+  sim --> ml --> sched --> api --> dash
+
+  heur[Heuristic models]:::fallback -.fallback if untrained.-> ml
+  mock[Client-side mock]:::fallback -.fallback if API down.-> dash
+  k8s[(kind cluster<br/>real gameserver pods)]:::optin
+  sched -. K8S_ENABLED=1 .-> k8s
+
+  classDef fallback fill:#f5f5f5,stroke:#bbb,stroke-dasharray:4 3,color:#555;
+  classDef optin fill:#eef6ff,stroke:#4a90d9,color:#1a4a72;
 ```
 
 The simulated demo is complete and verified. **Real Kubernetes execution**
@@ -143,6 +158,36 @@ cluster reachable) the backend runs exactly as the pure-simulation demo — the
 executor degrades to a no-op. Teardown: `kind delete cluster --name arenaflow`.
 
 ---
+
+## Request lifecycle
+
+How one engine tick becomes data on screen (and, when enabled, real pods). The
+engine ticks continuously; the dashboard polls the REST endpoints independently:
+
+```mermaid
+sequenceDiagram
+  participant Sim as Simulator
+  participant ML as ML models
+  participant Sched as Scheduler
+  participant API as Flask API
+  participant K8s as kind cluster
+  participant UI as Dashboard
+
+  loop every tick (~1.6s)
+    Sim->>ML: telemetry (64 nodes)
+    ML->>Sched: predictions (forecast + failure risk)
+    Sched->>Sched: AI + static decisions, cost
+    opt K8S_ENABLED=1
+      Sched->>K8s: patch Deployment/scale → replicas_for(cap_ai)
+    end
+  end
+
+  UI->>API: GET /matrix, /comparison, /decisions … (poll)
+  API-->>UI: latest telemetry / predictions / decisions
+  UI->>API: GET /k8s
+  API->>K8s: read Deployment + pods/nodes
+  API-->>UI: live ready/desired pod counts
+```
 
 ## Data contract
 
