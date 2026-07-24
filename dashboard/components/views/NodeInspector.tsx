@@ -1,17 +1,19 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useDash } from "@/lib/store";
 import { C, statusColor, hexA, STATUS } from "@/lib/theme";
 import Spark from "../charts/Spark";
 
 export default function NodeInspector() {
-  const { nodeDetail, selected, setSelected } = useDash();
+  const { nodeDetail } = useDash();
+  const router = useRouter();
   if (!nodeDetail) return <div className="mono" style={{ color: C.muted }}>loading node…</div>;
   const { node: n, history, events } = nodeDetail;
   const c = statusColor(n.status);
   const failPct = Math.round(n.failure_risk_score * 100);
   const failColor = n.failure_risk_score > 0.6 ? C.accent : n.failure_risk_score > 0.4 ? "#f0743a" : n.failure_risk_score > 0.2 ? "#f2c14e" : C.green;
   const idx = Number(n.node_id.split("-")[1]) || 0;
-  const cyc = (d: number) => setSelected(`node-${(idx + d + 64) % 64}`);
+  const cyc = (d: number) => router.push(`/node/node-${(idx + d + 64) % 64}`);
 
   const metrics = [
     { k: "LOAD", v: `${Math.round(n.cpu_pct)}%`, c },

@@ -6,8 +6,8 @@ import { mockSnapshot, emptySnapshot } from "./mock";
 import type { Mode, Scenario, NodeView, Alert } from "./types";
 
 export type Snap = ReturnType<typeof mockSnapshot>;
+/** Route segment names under app/(dashboard)/ — each is a real, linkable URL. */
 export type View = "overview" | "node" | "forecast" | "compare" | "cost" | "alerts" | "decisions";
-export type Phase = "landing" | "boot" | "app";
 
 interface NodeDetail {
   node: NodeView;
@@ -19,15 +19,10 @@ interface Ctx {
   snap: Snap;
   online: boolean;
   useMock: boolean;
-  view: View;
-  setView: (v: View) => void;
   selected: string;
   setSelected: (id: string) => void;
   nodeDetail: NodeDetail | null;
   control: (b: { running?: boolean; mode?: Mode; scenario?: Scenario }) => void;
-  phase: Phase;
-  startSim: () => void;
-  goHome: () => void;
 }
 
 const DashCtx = createContext<Ctx | null>(null);
@@ -80,8 +75,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [snap, setSnap] = useState<Snap>(() => emptySnapshot());
   const [online, setOnline] = useState(false);
   const [useMock, setUseMock] = useState(FORCE_MOCK);
-  const [phase, setPhase] = useState<Phase>("landing");
-  const [view, setView] = useState<View>("overview");
   const [selected, setSelected] = useState("node-27");
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null);
   const selectedRef = useRef(selected);
@@ -137,20 +130,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (!FORCE_MOCK) postControl(b).catch(() => {});
   }, []);
 
-  // landing -> boot -> app (the boot overlay animates for ~1.75s before the
-  // dashboard mounts, matching the design's initialization sequence)
-  const startSim = useCallback(() => {
-    setPhase("boot");
-    setTimeout(() => setPhase("app"), 1750);
-  }, []);
-
-  // jump straight back to the landing page (no boot sequence — that only
-  // plays on the way into the dashboard)
-  const goHome = useCallback(() => setPhase("landing"), []);
-
   return (
-    <DashCtx.Provider value={{ snap, online, useMock, view, setView, selected, setSelected,
-      nodeDetail, control, phase, startSim, goHome }}>
+    <DashCtx.Provider value={{ snap, online, useMock, selected, setSelected, nodeDetail, control }}>
       {children}
     </DashCtx.Provider>
   );

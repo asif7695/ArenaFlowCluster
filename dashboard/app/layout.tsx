@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { DashboardProvider } from "@/lib/store";
 import "./globals.css";
 
 const space = Space_Grotesk({
@@ -21,7 +22,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${space.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <DashboardProvider>{children}</DashboardProvider>
+      </body>
     </html>
   );
 }

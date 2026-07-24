@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useDash, View } from "@/lib/store";
 import { C } from "@/lib/theme";
 
@@ -13,36 +15,38 @@ const NAV: [View, string][] = [
 ];
 
 export default function Sidebar() {
-  const { snap, view, setView, control, online, useMock, goHome } = useDash();
+  const { snap, selected, control, online, useMock } = useDash();
+  const pathname = usePathname();
   const mode = snap.mode;
 
   return (
     <aside style={{ width: 236, flex: "none", display: "flex", flexDirection: "column",
       background: "linear-gradient(180deg,#0c0d10,#0a0b0d)", borderRight: `1px solid ${C.border}` }}>
       {/* logo — click to return to the front page */}
-      <button onClick={goHome} title="Back to front page" style={{ display: "flex", alignItems: "center", gap: 11,
-        padding: "18px 18px 16px", borderBottom: `1px solid ${C.border2}`, textAlign: "left", cursor: "pointer" }}>
+      <Link href="/" title="Back to front page" style={{ display: "flex", alignItems: "center", gap: 11,
+        padding: "18px 18px 16px", borderBottom: `1px solid ${C.border2}`, textAlign: "left" }}>
         <div style={{ position: "relative", width: 30, height: 30, flex: "none" }}>
           <div style={{ position: "absolute", inset: 0, background: C.accent, borderRadius: 7,
             transform: "rotate(45deg)", boxShadow: "0 0 14px rgba(255,56,74,.6)" }} />
           <div style={{ position: "absolute", inset: 9, background: "#0a0b0d", borderRadius: 3,
             transform: "rotate(45deg)" }} />
         </div>
-        <div style={{ lineHeight: 1.05 }}>
+        <div style={{ lineHeight: 1.05, color: C.text }}>
           <div style={{ fontWeight: 700, fontSize: 14 }}>ArenaFlow<span style={{ color: C.accent }}>Cluster</span></div>
           <div className="mono" style={{ fontSize: 8.5, letterSpacing: ".18em", color: C.muted2, marginTop: 2 }}>
             CLUSTER&nbsp;INTELLIGENCE
           </div>
         </div>
-      </button>
+      </Link>
 
-      {/* nav */}
+      {/* nav — real, linkable routes */}
       <nav style={{ display: "flex", flexDirection: "column", gap: 3, padding: "14px 12px", flex: 1, overflowY: "auto" }}>
         <div className="mono" style={{ fontSize: 9, letterSpacing: ".16em", color: C.muted3, padding: "4px 8px 9px" }}>NAVIGATION</div>
         {NAV.map(([key, label], i) => {
-          const active = view === key;
+          const href = key === "node" ? `/node/${selected}` : `/${key}`;
+          const active = key === "node" ? pathname.startsWith("/node") : pathname === `/${key}`;
           return (
-            <button key={key} onClick={() => setView(key)} style={{
+            <Link key={key} href={href} style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 10px",
               borderRadius: 8, border: `1px solid ${active ? "rgba(255,56,74,.3)" : "transparent"}`,
               background: active ? "linear-gradient(90deg,rgba(255,56,74,.14),rgba(255,56,74,.02))" : "transparent",
@@ -51,7 +55,7 @@ export default function Sidebar() {
                 background: active ? C.accent : "#3a3f47", boxShadow: active ? "0 0 8px #ff384a" : "none" }} />
               <span style={{ flex: 1 }}>{label}</span>
               <span className="mono" style={{ fontSize: 9.5, opacity: 0.5 }}>{String(i + 1).padStart(2, "0")}</span>
-            </button>
+            </Link>
           );
         })}
       </nav>
@@ -68,7 +72,7 @@ export default function Sidebar() {
                 border: `1px solid ${on ? "rgba(255,56,74,.45)" : "rgba(255,255,255,.08)"}`,
                 background: on ? "linear-gradient(90deg,rgba(255,56,74,.18),rgba(255,56,74,.05))" : C.panel2,
                 color: on ? C.accent3 : C.muted }}>
-                {m === "ai" ? "AI PREDICTIVE" : "STATIC"}
+                {m === "ai" ? "AI PREDICTIVE" : "STATIC"}
               </button>
             );
           })}

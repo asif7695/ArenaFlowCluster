@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDash } from "@/lib/store";
 import { C, statusColor, hexA, STATUS, actionColor } from "@/lib/theme";
 import type { Status } from "@/lib/types";
@@ -9,7 +10,8 @@ const REGIONS = ["us-east-1", "eu-west-1", "ap-south-1", "us-west-2"];
 const LEGEND: Status[] = ["healthy", "warning", "degraded", "critical"];
 
 export default function Overview() {
-  const { snap, setSelected, setView } = useDash();
+  const { snap } = useDash();
+  const router = useRouter();
   const [region, setRegion] = useState<string>("all");
   const nodes = snap.nodes;
   const s = snap.summary;
@@ -70,7 +72,7 @@ export default function Overview() {
                   : n.status === "degraded" ? `0 0 11px ${hexA(c, .28)}` : "none";
                 return (
                   <button key={n.node_id} title={`${n.node_id} · ${n.region} · ${STATUS[n.status].label}`}
-                    onClick={() => { setSelected(n.node_id); setView("node"); }}
+                    onClick={() => router.push(`/node/${n.node_id}`)}
                     style={{ textAlign: "left", background: C.panel2, border: `1px solid ${C.border2}`,
                       borderLeft: `3px solid ${c}`, borderRadius: 7, padding: "7px 6px", display: "flex",
                       flexDirection: "column", gap: 6, minHeight: 62, minWidth: 0, boxShadow: glow,
@@ -132,7 +134,7 @@ export default function Overview() {
               </span>
             </div>
             {snap.alerts.slice(0, 4).map((a) => (
-              <button key={a.id} onClick={() => { setSelected(a.node_id); setView("node"); }} style={{
+              <button key={a.id} onClick={() => router.push(`/node/${a.node_id}`)} style={{
                 display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", borderBottom: `1px solid ${C.hair}`, textAlign: "left", width: "100%" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", flex: "none", background: statusColor(a.severity), boxShadow: `0 0 6px ${statusColor(a.severity)}` }} />
                 <span style={{ flex: 1, minWidth: 0 }}>

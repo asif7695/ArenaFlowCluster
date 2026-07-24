@@ -1,21 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useDash, View } from "@/lib/store";
+import { usePathname } from "next/navigation";
+import { useDash } from "@/lib/store";
 import { C } from "@/lib/theme";
 
-const TITLES: Record<View, [string, string]> = {
-  overview: ["Node Matrix", "Real-time condition of all 64 game-server nodes"],
-  node: ["Node Inspector", "Per-node telemetry, prediction & remediation"],
-  forecast: ["Predictive Scaling", "Demand forecast & pre-emptive capacity planning"],
-  compare: ["AI vs Static Baseline", "Cost & reliability over identical simulated traffic"],
-  cost: ["Cost Analytics", "Spend breakdown, projections & savings drivers"],
-  alerts: ["Health Alerts", "Anomaly & degradation signals with lead time"],
-  decisions: ["Scheduler Log", "Auditable record of automated placement & scaling"],
-};
+const TITLES: [string, string, string][] = [
+  ["/overview", "Node Matrix", "Real-time condition of all 64 game-server nodes"],
+  ["/node", "Node Inspector", "Per-node telemetry, prediction & remediation"],
+  ["/forecast", "Predictive Scaling", "Demand forecast & pre-emptive capacity planning"],
+  ["/compare", "AI vs Static Baseline", "Cost & reliability over identical simulated traffic"],
+  ["/cost", "Cost Analytics", "Spend breakdown, projections & savings drivers"],
+  ["/alerts", "Health Alerts", "Anomaly & degradation signals with lead time"],
+  ["/decisions", "Scheduler Log", "Auditable record of automated placement & scaling"],
+];
 
 export default function Header() {
-  const { snap, view, control } = useDash();
-  const [title, sub] = TITLES[view];
+  const { snap, control } = useDash();
+  const pathname = usePathname();
+  const [, title, sub] = TITLES.find(([prefix]) => pathname.startsWith(prefix)) ?? TITLES[0];
   const running = snap.running;
 
   // Wall-clock time is inherently different between server-render and client

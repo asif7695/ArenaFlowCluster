@@ -1,11 +1,13 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useDash } from "@/lib/store";
 import { C, statusColor, hexA, STATUS } from "@/lib/theme";
 
 const GRID = "90px 70px minmax(0,1fr) 90px 90px 90px";
 
 export default function Alerts() {
-  const { snap, setSelected, setView } = useDash();
+  const { snap } = useDash();
+  const router = useRouter();
   const alerts = snap.alerts;
 
   return (
@@ -18,7 +20,7 @@ export default function Alerts() {
       {alerts.map((a) => {
         const col = statusColor(a.severity);
         return (
-          <button key={a.id} onClick={() => { setSelected(a.node_id); setView("node"); }} style={{
+          <button key={a.id} onClick={() => router.push(`/node/${a.node_id}`)} style={{
             display: "grid", gridTemplateColumns: GRID, gap: 10, alignItems: "center", padding: "13px 18px",
             borderBottom: `1px solid ${C.hair}`, textAlign: "left", width: "100%" }}>
             <span className="mono" style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".06em", padding: "4px 8px", borderRadius: 5,

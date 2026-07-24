@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useDash } from "@/lib/store";
 import { C, hexA } from "@/lib/theme";
 
 const CHIPS: [string, string][] = [
@@ -81,8 +80,7 @@ const corner = (pos: React.CSSProperties): React.CSSProperties => ({
   position: "absolute", width: 30, height: 30, ...pos,
 });
 
-export default function Landing() {
-  const { startSim } = useDash();
+export default function Landing({ onStart }: { onStart: () => void }) {
   const netRef = useRef<HTMLCanvasElement>(null);
   useClusterNet(netRef);
 
@@ -153,7 +151,7 @@ export default function Landing() {
           INTELLIGENT&nbsp;·&nbsp;AUTONOMOUS&nbsp;·&nbsp;ADAPTIVE
         </div>
 
-        <button onClick={startSim} className="afc-start-btn" style={{ position: "relative", overflow: "hidden", padding: "17px 46px",
+        <button onClick={onStart} className="afc-start-btn" style={{ position: "relative", overflow: "hidden", padding: "17px 46px",
           border: `1px solid ${hexA(C.accent, .5)}`, borderRadius: 12, background: "linear-gradient(135deg,#ff4655,#c81e2c)",
           color: "#fff", fontWeight: 700, fontSize: 15, letterSpacing: ".04em", cursor: "pointer", boxShadow: `0 10px 34px ${hexA(C.accent, .4)}` }}>
           <span style={{ position: "absolute", top: 0, bottom: 0, width: "40%", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent)", animation: "afcscan 2.6s linear infinite" }} />
