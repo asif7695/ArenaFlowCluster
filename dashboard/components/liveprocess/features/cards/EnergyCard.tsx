@@ -17,7 +17,7 @@ export default function EnergyCard() {
         {[
           { k: "NODES RESTED", v: String(snap.summary.nodes_rested), sub: "parked, drawing ~0 power", c: C.blue },
           { k: "ENERGY SAVED", v: `${snap.summary.energy_saved_pct}%`, sub: "vs always-on static", c: C.green },
-          { k: "ACTIVE NODES", v: String(snap.summary.active_nodes), sub: `of ${snap.summary.total_nodes}`, c: C.text },
+          { k: "ACTIVE SERVERS", v: String(snap.summary.active_nodes), sub: `of ${snap.summary.total_nodes}`, c: C.text },
         ].map((m) => (
           <div key={m.k} className="panel" style={{ padding: 13 }}>
             <div className="k-label">{m.k}</div>

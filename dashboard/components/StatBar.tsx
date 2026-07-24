@@ -8,7 +8,7 @@ export default function StatBar() {
   const counts = snap.counts;
 
   const items: { k: string; v: string; sub: string; color?: string }[] = [
-    { k: "ACTIVE NODES", v: `${s.active_nodes}/${s.total_nodes}`, sub: counts.critical ? `${counts.critical} crit` : "ok" },
+    { k: "ACTIVE SERVERS", v: `${s.active_nodes}/${s.total_nodes}`, sub: counts.critical ? `${counts.critical} crit` : "ok" },
     { k: "NODES RESTED", v: String(s.nodes_rested), sub: `-${s.energy_saved_pct}% energy`, color: s.nodes_rested ? C.green : undefined },
     { k: "SESSIONS", v: s.sessions.toLocaleString(), sub: "live" },
     { k: "AVG LATENCY", v: `${s.avg_latency}ms`, sub: "p50", color: s.avg_latency > 90 ? "#f0743a" : undefined },
