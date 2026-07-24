@@ -1,6 +1,6 @@
 """Predictive node parking (consolidation) policy tests."""
-import config as C
-import consolidation
+from app import config as C
+from app.services import consolidation
 
 TS = "2026-01-01T00:00:00+00:00"
 

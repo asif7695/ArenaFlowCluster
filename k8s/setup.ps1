@@ -40,7 +40,7 @@ kubectl apply -f (Join-Path $here "gameserver-deployment.yaml")
 Write-Host ""
 Write-Host "== ready ==" -ForegroundColor Green
 Write-Host "1) start the backend against this cluster:" -ForegroundColor Cyan
-Write-Host '     $env:K8S_ENABLED="1"; python backend\app.py' -ForegroundColor White
+Write-Host '     $env:K8S_ENABLED="1"; python backend\wsgi.py' -ForegroundColor White
 Write-Host "2) watch the AI scale real pods as demand cycles:" -ForegroundColor Cyan
 Write-Host "     kubectl get pods -n arenaflow -w" -ForegroundColor White
 Write-Host "3) confirm least-privilege RBAC:" -ForegroundColor Cyan

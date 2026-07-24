@@ -14,20 +14,17 @@ from collections import deque
 
 import os
 
-import _paths  # noqa: F401  (side effect: sim + ml on sys.path)
+from .. import _paths  # noqa: F401  (side effect: sim + ml on sys.path)
 from simulator import ClusterSimulator  # type: ignore
 from nodes import ROSTER, REGIONS  # type: ignore
 from features import WINDOW, FEATURE_NAMES, extract_features, to_vector  # type: ignore
 from forecast_model import ForecastModel  # type: ignore
 from anomaly_model import AnomalyModel  # type: ignore
 
-import config as C
-import scheduler_ai
-import scheduler_static
-import consolidation
-import k8s_executor
-from cost import CostTracker
-from state import STORE
+from app import config as C
+from app.services import scheduler_ai, scheduler_static, consolidation, k8s_executor
+from app.services.cost import CostTracker
+from app.core.state import STORE
 
 _SESS = FEATURE_NAMES.index("sess")
 _LAT = FEATURE_NAMES.index("lat")

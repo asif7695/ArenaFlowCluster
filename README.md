@@ -32,7 +32,7 @@ With the K8s flag off, the system runs exactly as the pure-simulation demo.
 |---|---|
 | `simulator/` | 64-node telemetry generator (daily-cycle demand + spikes + a planted failure ramp) |
 | `ml/` | scikit-learn demand-forecast + anomaly models, training & evaluation |
-| `backend/` | Flask API + engine (runs sim→ML→both schedulers→cost each tick) |
+| `backend/` | Flask API + engine, in a layered `app/{api,core,services}` package (runs sim→ML→both schedulers→cost each tick) |
 | `dashboard/` | Next.js + Chart.js dashboard, all 7 design screens |
 
 Each piece runs independently (simulator emits sample JSON; backend falls back to
@@ -59,10 +59,10 @@ python train.py            # prints MAE/MAPE + precision/recall, saves models/*.
 cd backend
 python -m venv .venv && source .venv/Scripts/activate
 pip install -r requirements.txt
-python app.py              # engine starts ticking; serves REST endpoints
+python wsgi.py             # engine starts ticking; serves REST endpoints
 ```
 > Backend works even without trained models — it falls back to heuristic models.
-> Force that with `USE_MOCK=1 python app.py`.
+> Force that with `USE_MOCK=1 python wsgi.py`.
 
 ### 3. Dashboard — Next.js (port 3000)
 ```bash
@@ -112,7 +112,7 @@ powershell -ExecutionPolicy Bypass -File k8s\setup.ps1      # Windows
 bash k8s/setup.sh                                           # macOS/Linux/Git Bash
 
 # 2. run the backend against it (opt-in via the flag)
-K8S_ENABLED=1 python backend/app.py        # ($env:K8S_ENABLED="1" on PowerShell)
+K8S_ENABLED=1 python backend/wsgi.py       # ($env:K8S_ENABLED="1" on PowerShell)
 
 # 3. watch real pods track the AI forecast as demand cycles
 kubectl get pods -n arenaflow -w
@@ -124,7 +124,7 @@ node count) whenever `K8S_ENABLED=1`.
 
 **Honest scaling note:** a laptop can't run 64 pods, so the real Deployment is a
 *proportional, capped mirror* of the simulated fleet —
-`replicas = clamp(round(cap_ai / 8), 1, 8)` (`backend/config.py:replicas_for`).
+`replicas = clamp(round(cap_ai / 8), 1, 8)` (`backend/app/config.py:replicas_for`).
 The dashboard still shows the full 64-node simulation; the cluster is the live,
 scaled-down proof that decisions execute.
 
@@ -222,7 +222,7 @@ cd ml      && python -m pytest -q                           # model accuracy (2 
    route_away` plus an added `place` action; the design's `SCALE↑/↓ / REROUTE /
    PLACE` labels are carried on each decision's `label` field.
 4. **Config vs sliders** — the design's horizon/degrade/fail/buffer sliders live as
-   backend config (`backend/config.py`); there is no separate settings screen.
+   backend config (`backend/app/config.py`); there is no separate settings screen.
 5. **Mock data** — "runs before the backend" is provided by a client-side mock
    (`dashboard/lib/mock.ts`) rather than static JSON files.
 

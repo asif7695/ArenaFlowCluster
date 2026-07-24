@@ -20,7 +20,7 @@ scheduler never calls this — see engine.py's mode gating.
 """
 from __future__ import annotations
 
-import config as C
+from app import config as C
 
 REPAIR_REASON = "repair"
 PARK_REASON = "park"

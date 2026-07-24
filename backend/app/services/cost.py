@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 
-import config as C
+from app import config as C
 
 
 class CostTracker:

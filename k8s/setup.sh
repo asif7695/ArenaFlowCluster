@@ -40,7 +40,7 @@ cat <<'EOF'
 
 == ready ==
 1) start the backend against this cluster:
-     K8S_ENABLED=1 python backend/app.py
+     K8S_ENABLED=1 python backend/wsgi.py
 2) watch the AI scale real pods as demand cycles:
      kubectl get pods -n arenaflow -w
 3) confirm least-privilege RBAC:

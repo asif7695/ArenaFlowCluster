@@ -1,7 +1,6 @@
-"""Flask REST API for ArenaFlowCluster.
+"""REST endpoints for ArenaFlowCluster.
 
-Serves the live engine snapshot to the dashboard. CORS is enabled for local
-frontend dev. Endpoints:
+Serves the live engine snapshot to the dashboard. Endpoints:
 
   GET  /health                     engine status
   GET  /telemetry                  raw telemetry records (data contract)
@@ -18,14 +17,11 @@ frontend dev. Endpoints:
 """
 from __future__ import annotations
 
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+from flask import jsonify, request
 
-from engine import ENGINE
-from state import STORE
-
-app = Flask(__name__)
-CORS(app)
+from app.api import api_bp
+from app.core.engine import ENGINE
+from app.core.state import STORE
 
 # contract field sets
 TELEMETRY_FIELDS = ("node_id", "timestamp", "cpu_pct", "mem_pct", "active_sessions", "latency_ms")
@@ -37,7 +33,7 @@ def snap():
     return STORE.get()
 
 
-@app.get("/health")
+@api_bp.get("/health")
 def health():
     s = snap()
     return jsonify({
@@ -50,14 +46,14 @@ def health():
     })
 
 
-@app.get("/telemetry")
+@api_bp.get("/telemetry")
 def telemetry():
     s = snap()
     recs = [{k: n[k] for k in TELEMETRY_FIELDS} for n in s.get("nodes", [])]
     return jsonify(recs)
 
 
-@app.get("/predictions")
+@api_bp.get("/predictions")
 def predictions():
     s = snap()
     ts = s.get("timestamp")
@@ -69,7 +65,7 @@ def predictions():
     return jsonify(recs)
 
 
-@app.get("/decisions")
+@api_bp.get("/decisions")
 def decisions():
     mode = request.args.get("mode", "ai")
     limit = int(request.args.get("limit", 40))
@@ -78,7 +74,7 @@ def decisions():
     return jsonify(log[:limit])
 
 
-@app.get("/summary")
+@api_bp.get("/summary")
 def summary():
     s = snap()
     return jsonify({
@@ -91,7 +87,7 @@ def summary():
     })
 
 
-@app.get("/matrix")
+@api_bp.get("/matrix")
 def matrix():
     s = snap()
     return jsonify({
@@ -104,7 +100,7 @@ def matrix():
 _PARK_SEVERITY = {"PARK": "offline", "WAKE": "healthy", "DRAIN": "critical"}
 
 
-@app.get("/nodes/<node_id>")
+@api_bp.get("/nodes/<node_id>")
 def node_detail(node_id):
     s = snap()
     node = next((n for n in s.get("nodes", []) if n["node_id"] == node_id), None)
@@ -129,7 +125,7 @@ def node_detail(node_id):
     return jsonify({"node": node, "history": hist, "events": events})
 
 
-@app.get("/forecast")
+@api_bp.get("/forecast")
 def forecast():
     s = snap()
     return jsonify({
@@ -142,7 +138,7 @@ def forecast():
     })
 
 
-@app.get("/comparison")
+@api_bp.get("/comparison")
 def comparison():
     s = snap()
     return jsonify({
@@ -152,20 +148,20 @@ def comparison():
     })
 
 
-@app.get("/alerts")
+@api_bp.get("/alerts")
 def alerts():
     s = snap()
     return jsonify({"alerts": s.get("alerts", []), "counts": s.get("counts", {})})
 
 
-@app.get("/k8s")
+@api_bp.get("/k8s")
 def k8s():
     # live real-cluster execution state (orchestrator-native mode); {enabled:false}
     # when K8S_ENABLED is not set.
     return jsonify(snap().get("k8s", {"enabled": False}))
 
 
-@app.post("/control")
+@api_bp.post("/control")
 def control():
     body = request.get_json(silent=True) or {}
     ENGINE.apply_control(
@@ -173,11 +169,3 @@ def control():
     )
     return jsonify({"ok": True, "mode": ENGINE.mode,
                     "scenario": ENGINE.scenario, "running": ENGINE.running})
-
-
-ENGINE.start()
-
-if __name__ == "__main__":
-    # threaded so the tick loop and requests coexist; use_reloader off to avoid
-    # starting the engine twice.
-    app.run(host="0.0.0.0", port=5000, threaded=True, use_reloader=False)

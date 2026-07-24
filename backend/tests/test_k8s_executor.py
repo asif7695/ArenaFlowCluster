@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import types
 
-import config as C
-import k8s_executor
-from k8s_executor import K8sExecutor
+from app import config as C
+from app.services import k8s_executor
+from app.services.k8s_executor import K8sExecutor
 
 
 # --------------------------------------------------------------- fake clients

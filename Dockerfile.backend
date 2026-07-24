@@ -1,6 +1,6 @@
 # ArenaFlowCluster backend — Flask engine (simulator + ML + schedulers).
-# Build context is the REPO ROOT so the sibling layout backend/_paths.py expects
-# (simulator/ and ml/ next to backend/) is preserved:
+# Build context is the REPO ROOT so the sibling layout backend/app/_paths.py
+# expects (simulator/ and ml/ next to backend/) is preserved:
 #   docker build -t arenaflow-backend:latest -f Dockerfile.backend .
 FROM python:3.11-slim
 
@@ -27,4 +27,4 @@ RUN cd ml && python train.py
 EXPOSE 5000
 # K8S_ENABLED is unset by default -> pure simulation. Set it (and mount a
 # kubeconfig / run in-cluster) to enable real orchestrator execution.
-CMD ["python", "backend/app.py"]
+CMD ["python", "backend/wsgi.py"]

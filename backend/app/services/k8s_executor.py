@@ -15,7 +15,7 @@ pods (1..K8S_MAX_REPLICAS), since a laptop can't run 64 pods.
 """
 from __future__ import annotations
 
-import config as C
+from app import config as C
 
 
 class K8sExecutor:

@@ -2,7 +2,8 @@
 import os
 import sys
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# this file: backend/app/_paths.py -> up three levels to the repo root
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 for _pkg in ("simulator", "ml"):
     _p = os.path.join(_ROOT, _pkg)
     if _p not in sys.path:

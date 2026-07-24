@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 
-import config as C
+from app import config as C
 
 # design-facing labels for each contract action
 ACTION_LABELS = {

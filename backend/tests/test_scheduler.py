@@ -1,7 +1,6 @@
 """Scheduler decision-logic tests (the core of the concept's explainability claim)."""
-import config as C
-import scheduler_ai
-import scheduler_static
+from app import config as C
+from app.services import scheduler_ai, scheduler_static
 
 TS = "2026-01-01T00:00:00+00:00"
 

@@ -7,7 +7,7 @@ dashboard can compare cost and player-facing incidents side by side.
 """
 from __future__ import annotations
 
-import config as C
+from app import config as C
 
 ACTION_LABELS = {"scale_up": "SCALE↑", "scale_down": "SCALE↓"}
 
