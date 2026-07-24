@@ -27,7 +27,7 @@ html, body {
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.13); border-radius: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
-button { font-family: inherit; border: none; background: none; cursor: pointer; }
+button { font-family: inherit; color: inherit; border: none; background: none; cursor: pointer; }
 a { color: var(--accent); text-decoration: none; }
 table { border-collapse: collapse; }
 

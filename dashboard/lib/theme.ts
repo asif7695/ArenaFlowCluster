@@ -11,9 +11,12 @@ export const C = {
   hair: "rgba(255,255,255,.03)",
   text: "#e7e9ec",
   text2: "#c9ccd1",
+  // muted/muted2/muted3 are all tuned to clear WCAG AA's 4.5:1 text contrast
+  // minimum against the lightest panel surface in the app (panel3, #12151a) —
+  // the original muted2 (~4.0:1) and muted3 (~2.9:1) both failed it.
   muted: "#8b9099",
-  muted2: "#6b7280",
-  muted3: "#565c66",
+  muted2: "#828b9c",
+  muted3: "#78808e",
   accent: "#ff384a",
   accent2: "#ff5b66",
   accent3: "#ff8791",
@@ -26,7 +29,7 @@ export const STATUS: Record<Status, { c: string; label: string }> = {
   warning: { c: "#f2c14e", label: "WARNING" },
   degraded: { c: "#f0743a", label: "DEGRADED" },
   critical: { c: "#ff384a", label: "CRITICAL" },
-  offline: { c: "#565c66", label: "OFFLINE" },
+  offline: { c: "#78808e", label: "OFFLINE" }, // matches the WCAG-fixed muted3
 };
 
 export function statusColor(s: Status): string {
