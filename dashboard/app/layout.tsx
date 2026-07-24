@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { DashboardProvider } from "@/lib/store";
+import SessionOverlay from "@/components/liveprocess/session/SessionOverlay";
+import FeaturesOverlay from "@/components/liveprocess/features/FeaturesOverlay";
 import "./globals.css";
 
 const space = Space_Grotesk({
@@ -23,7 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${space.variable} ${mono.variable}`}>
       <body>
-        <DashboardProvider>{children}</DashboardProvider>
+        <DashboardProvider>
+          {children}
+          <SessionOverlay />
+          <FeaturesOverlay />
+        </DashboardProvider>
       </body>
     </html>
   );

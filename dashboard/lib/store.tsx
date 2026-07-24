@@ -8,6 +8,8 @@ import type { Mode, Scenario, NodeView, Alert } from "./types";
 export type Snap = ReturnType<typeof mockSnapshot>;
 /** Route segment names under app/(dashboard)/ — each is a real, linkable URL. */
 export type View = "overview" | "node" | "forecast" | "compare" | "cost" | "alerts" | "decisions";
+/** Which full-screen explainer overlay is active (null = none). */
+export type Overlay = "session" | "features" | null;
 
 interface NodeDetail {
   node: NodeView;
@@ -23,6 +25,9 @@ interface Ctx {
   setSelected: (id: string) => void;
   nodeDetail: NodeDetail | null;
   control: (b: { running?: boolean; mode?: Mode; scenario?: Scenario }) => void;
+  /** Active full-screen explainer overlay — purely local UI state, never a backend call. */
+  activeOverlay: Overlay;
+  setActiveOverlay: (v: Overlay) => void;
 }
 
 const DashCtx = createContext<Ctx | null>(null);
@@ -77,6 +82,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [useMock, setUseMock] = useState(FORCE_MOCK);
   const [selected, setSelected] = useState("node-27");
   const [nodeDetail, setNodeDetail] = useState<NodeDetail | null>(null);
+  const [activeOverlay, setActiveOverlay] = useState<Overlay>(null);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
@@ -131,7 +137,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <DashCtx.Provider value={{ snap, online, useMock, selected, setSelected, nodeDetail, control }}>
+    <DashCtx.Provider value={{ snap, online, useMock, selected, setSelected, nodeDetail, control, activeOverlay, setActiveOverlay }}>
       {children}
     </DashCtx.Provider>
   );

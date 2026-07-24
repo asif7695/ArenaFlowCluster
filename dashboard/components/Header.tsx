@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useDash } from "@/lib/store";
-import { C } from "@/lib/theme";
+import { C, hexA } from "@/lib/theme";
 
 const TITLES: [string, string, string][] = [
   ["/overview", "Node Matrix", "Real-time condition of all 64 game-server nodes"],
@@ -15,7 +15,7 @@ const TITLES: [string, string, string][] = [
 ];
 
 export default function Header() {
-  const { snap, control } = useDash();
+  const { snap, control, setActiveOverlay } = useDash();
   const pathname = usePathname();
   const [, title, sub] = TITLES.find(([prefix]) => pathname.startsWith(prefix)) ?? TITLES[0];
   const running = snap.running;
@@ -40,6 +40,17 @@ export default function Header() {
         <div className="mono" style={{ fontSize: 11, color: C.muted2, marginTop: 2 }}>{sub}</div>
       </div>
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+        <button onClick={() => setActiveOverlay("session")} className="afc-start-btn mono" style={{
+          padding: "8px 13px", borderRadius: 8, fontWeight: 700, fontSize: 11, letterSpacing: ".03em",
+          border: `1px solid ${hexA(C.accent, .5)}`, background: "linear-gradient(135deg,#ff4655,#c81e2c)",
+          color: "#fff", boxShadow: `0 6px 20px ${hexA(C.accent, .32)}` }}>
+          ▸ SESSION FLOW
+        </button>
+        <button onClick={() => setActiveOverlay("features")} className="afc-start-btn mono" style={{
+          padding: "8px 13px", borderRadius: 8, fontWeight: 700, fontSize: 11, letterSpacing: ".03em",
+          border: `1px solid rgba(255,255,255,.14)`, background: C.panel3, color: C.text2 }}>
+          ◈ SYSTEM FEATURES
+        </button>
         <div className="mono" style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 11px",
           background: C.panel2, border: `1px solid rgba(255,255,255,.07)`, borderRadius: 8, fontSize: 12, color: C.text2 }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.accent,
