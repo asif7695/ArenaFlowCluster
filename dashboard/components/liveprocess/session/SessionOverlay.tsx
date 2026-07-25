@@ -81,6 +81,7 @@ function RecapSummary({ frozen, script, onReplay }: {
 
   const tiles = [
     { k: "SESSIONS SIMULATED", v: String(SESSION_COUNT), sub: "this walkthrough", c: C.text },
+    { k: "SCALE-DOWN BLOCKED", v: home?.label ?? "—", sub: "guard kept you online mid-match", c: C.blue },
     { k: "NODE AFFECTED", v: home?.label ?? "—", sub: `crossed ${Math.round(FAIL_CUTOFF * 100)}% risk cutoff`, c: C.accent },
     { k: "MIGRATED TO", v: target?.label ?? "—", sub: "zero dropped sessions", c: C.blue },
     { k: "BACK ONLINE", v: `~${REPAIR_TICKS} ticks`, sub: "self-healed", c: C.green },
@@ -91,7 +92,7 @@ function RecapSummary({ frozen, script, onReplay }: {
       <div className="panel" style={{ padding: "20px 16px" }}>
         <FlowDiagram />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12 }}>
         {tiles.map((t) => (
           <div key={t.k} className="panel" style={{ padding: 13, textAlign: "center" }}>
             <div className="k-label">{t.k}</div>

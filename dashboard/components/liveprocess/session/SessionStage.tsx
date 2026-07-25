@@ -36,10 +36,14 @@ export default function SessionStage({
   const num = cards.length || 1;
   const homeIdx = Math.max(0, candidateIds.indexOf(homeId));
   const targetIdx = Math.max(0, candidateIds.indexOf(targetId));
+  // a sibling card shown parking during the "guarded" beat, so the contrast
+  // with the protected home node (which stays active) is visible
+  const guardedSiblingIdx = num > 1 ? (homeIdx + 1) % num : -1;
   const cardX = (i: number) => ((i + 0.5) / num) * 100;
 
   // per-card display status (home node degrades/heals across the arc)
   const displayStatus = (i: number, base: Status): Status => {
+    if (phase === "guarded" && i === guardedSiblingIdx) return "offline";
     if (i !== homeIdx) return base;
     if (phase === "trouble") return "degraded";
     if (phase === "problem" || phase === "migration") return "critical";
@@ -60,22 +64,23 @@ export default function SessionStage({
   // scoring; once placed we switch to a live SESSIONS count that moves.
   const showLive = phase !== "arrival" && phase !== "scoring";
   const share = Math.max(1, Math.round(sessionCount / num));
-  const filled = ["montage", "trouble", "problem", "migration", "recovery"].includes(phase);
+  const filled = ["montage", "guarded", "trouble", "problem", "migration", "recovery"].includes(phase);
   const homeBase = (cards[homeIdx]?.active_sessions ?? 0);
   const homeLoad = homeBase + share + 1; // what the home node was hosting pre-drain
   const sessionsOn = (i: number): number => {
     const base = cards[i].active_sessions;
-    const heroHere = ["placement", "montage", "trouble", "problem"].includes(phase) && i === homeIdx ? 1 : 0;
+    const heroHere = ["placement", "montage", "guarded", "trouble", "problem"].includes(phase) && i === homeIdx ? 1 : 0;
     let count = base + (filled ? share : 0) + heroHere;
+    if (phase === "guarded" && i === guardedSiblingIdx) count = 0; // parked — no traffic
     if (phase === "migration" || phase === "recovery") {
       if (i === homeIdx) count = phase === "recovery" && healed ? base : 0; // drained/emptied
       else if (i === targetIdx) count = base + share + homeLoad;            // received the migration
     }
     return count;
   };
-  const showCompanions = ["montage", "trouble", "problem", "migration", "recovery"].includes(phase);
+  const showCompanions = ["montage", "guarded", "trouble", "problem", "migration", "recovery"].includes(phase);
   const showSteer = phase === "trouble" || phase === "problem";
-  const trayDots = ["montage", "trouble", "problem", "migration", "recovery"].includes(phase);
+  const trayDots = ["montage", "guarded", "trouble", "problem", "migration", "recovery"].includes(phase);
 
   // ---- token layer ----------------------------------------------------------
   const heroFloating = phase === "arrival" || phase === "scoring";
@@ -159,6 +164,16 @@ export default function SessionStage({
                 <span className="mono" style={{ display: "inline-block", marginTop: 8, fontSize: 8, fontWeight: 700,
                   padding: "2px 6px", borderRadius: 4, color: C.accent, background: hexA(C.accent, .15),
                   border: `1px solid ${hexA(C.accent, .4)}` }}>⚠ DRAIN</span>
+              )}
+              {isHome && phase === "guarded" && (
+                <span className="mono" style={{ display: "inline-block", marginTop: 8, fontSize: 8, fontWeight: 700,
+                  padding: "2px 6px", borderRadius: 4, color: C.blue, background: hexA(C.blue, .15),
+                  border: `1px solid ${hexA(C.blue, .4)}` }}>🛡 PROTECTED</span>
+              )}
+              {phase === "guarded" && i === guardedSiblingIdx && (
+                <span className="mono" style={{ display: "inline-block", marginTop: 8, fontSize: 8, fontWeight: 700,
+                  padding: "2px 6px", borderRadius: 4, color: C.muted2, background: "rgba(255,255,255,.05)",
+                  border: `1px solid ${C.border2}` }}>PARKED — no live match</span>
               )}
 
               {trayDots && st !== "offline" && (

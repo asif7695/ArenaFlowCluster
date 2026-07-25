@@ -1,12 +1,15 @@
 // Beat/script builder for the Session Flow story — ONLY session control:
-// placement (by predicted load), then the problem → detect → migrate → recover
-// arc for the hero session's home node. Pure: same input → same beats.
+// placement (by predicted load), the Session Safety Guard blocking a
+// cost-driven park mid-match, then the problem → detect → migrate → recover
+// arc for a health-driven drain on the hero session's home node. Pure: same
+// input → same beats.
 //
-// The problem arc is deliberately an *illustrative* teaching scenario on the
-// hero's home node ("if your node develops a fault…"), using the real config
-// thresholds and, where present, the real PLACE reason string — never claiming
-// the simulator literally relocates individual sessions (route_away steers only
-// NEW sessions; a drain redistributes load). See the plan's honesty note.
+// The problem arc (and the guard beat) are deliberately *illustrative*
+// teaching scenarios applied to the hero's home node ("if your node develops
+// a fault…" / "if the scheduler wants to park your node…"), using the real
+// config thresholds/labels — never claiming the simulator literally singles
+// out this one session (route_away steers only NEW sessions; a drain or park
+// acts on the whole node). See the plan's honesty note.
 import type { Snap } from "@/lib/store";
 import type { NodeView } from "@/lib/types";
 
@@ -15,7 +18,7 @@ export const FAIL_CUTOFF = 0.6;
 export const REPAIR_TICKS = 10;
 
 export type SessionPhase =
-  | "arrival" | "scoring" | "placement" | "montage"
+  | "arrival" | "scoring" | "placement" | "montage" | "guarded"
   | "trouble" | "problem" | "migration" | "recovery" | "recap";
 
 export interface SessionBeat {
@@ -93,6 +96,14 @@ export function buildSessionScript(snap: Snap, sessionCount: number): SessionScr
       captions: [`The same rule places all ${N} of your sessions in milliseconds — balanced across healthy nodes.`],
     },
     {
+      id: "guarded", phase: "guarded", title: "Protected mid-match", illustrative: true,
+      subtitle: `${home.label} · scale-down blocked`, durationMs: 6500,
+      captions: [
+        `Demand dips and the scheduler looks to park idle nodes to cut cost — ${home.label} is a candidate.`,
+        "But your match is still live there. The Session Safety Guard blocks the park: no new matches route to it, and it keeps serving you until you're done.",
+      ],
+    },
+    {
       id: "trouble", phase: "trouble", title: "Trouble brewing", illustrative: true,
       subtitle: `${home.label} · risk climbing`, durationMs: 6500,
       captions: [
@@ -120,9 +131,9 @@ export function buildSessionScript(snap: Snap, sessionCount: number): SessionScr
     },
     {
       id: "recap", phase: "recap", title: "That's session control",
-      subtitle: "predict · steer · protect", durationMs: Infinity,
+      subtitle: "predict · guard · steer · protect", durationMs: Infinity,
       captions: [
-        "*Predict* → place on the safest node. *Steer* → move new matches off rising risk. *Protect* → migrate live players off a failure.",
+        "*Predict* → place on the safest node. *Guard* → block a scale-down while you're mid-match. *Steer* → move new matches off rising risk. *Protect* → migrate live players off a failure.",
         "Now explore the rest of the system →",
       ],
     },

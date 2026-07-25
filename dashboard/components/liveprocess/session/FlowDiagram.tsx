@@ -1,7 +1,8 @@
 "use client";
 // A compact end-to-end flow diagram for the recap screen: the same beats the
 // judge just watched, condensed into one connected strip so the whole arc
-// ("predict → place → steer → detect → migrate → heal") reads at a glance.
+// ("predict → place → protect → steer → detect → migrate → heal") reads at
+// a glance.
 import { C, hexA } from "@/lib/theme";
 
 const STEPS: { icon: string; label: string; color: string }[] = [
@@ -9,6 +10,7 @@ const STEPS: { icon: string; label: string; color: string }[] = [
   { icon: "◎", label: "SCORING", color: C.text2 },
   { icon: "◆", label: "PLACED", color: C.green },
   { icon: "⚡", label: "AT SCALE", color: C.green },
+  { icon: "⬡", label: "PROTECTED", color: C.blue },
   { icon: "⚠", label: "TROUBLE", color: "#f2c14e" },
   { icon: "✖", label: "DETECTED", color: C.accent },
   { icon: "⇄", label: "MIGRATED", color: C.blue },
