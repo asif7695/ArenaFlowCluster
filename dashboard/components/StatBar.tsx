@@ -15,6 +15,7 @@ export default function StatBar() {
     { k: "DEMAND INDEX", v: String(s.demand_index), sub: "/100", color: C.accent2 },
     { k: "HEALTH", v: String(s.healthy), sub: "nominal", color: C.green },
     { k: "COST vs STATIC", v: `-${s.savings_pct}%`, sub: "saved", color: C.green },
+    { k: "PLAYER IMPACT", v: String(s.players_dropped), sub: `${s.blocked_scaledowns} scale-downs blocked`, color: s.players_dropped ? "#f0743a" : C.green },
   ];
 
   return (

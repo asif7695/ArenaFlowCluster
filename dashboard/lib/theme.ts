@@ -30,6 +30,7 @@ export const STATUS: Record<Status, { c: string; label: string }> = {
   degraded: { c: "#f0743a", label: "DEGRADED" },
   critical: { c: "#ff384a", label: "CRITICAL" },
   offline: { c: "#78808e", label: "OFFLINE" }, // matches the WCAG-fixed muted3
+  draining: { c: "#5b9bff", label: "DRAINING" }, // still serving — waiting on a live match to end
 };
 
 export function statusColor(s: Status): string {
@@ -56,6 +57,7 @@ export const LABEL_COLOR: Record<string, string> = {
   PARK: "#8b9099",   // resting — neutral/muted, not urgent
   WAKE: "#22c58b",   // returning to service — good news
   DRAIN: "#ff384a",  // health issue — matches critical
+  GUARD: "#f2c14e",  // scale-down blocked by a live match — matches warning
 };
 
 export function actionColor(label: string | undefined, action: string): string {

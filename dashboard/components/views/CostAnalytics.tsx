@@ -16,11 +16,15 @@ export default function CostAnalytics() {
   const savedMo = Math.round(monthlyStatic - monthlyAI);
   const rateAI = (snap.capacity_ai * NODE_HR);
 
+  const impacted = snap.summary.players_impacted;
+  const dropped = snap.summary.players_dropped;
+
   const cards = [
     { k: "SPEND RATE", v: `$${rateAI.toFixed(1)}/h`, sub: "AI predictive, live", c: C.text },
     { k: "PROJECTED 30-DAY", v: fmt(monthlyAI), sub: "at current traffic", c: C.accent2 },
     { k: "STATIC 30-DAY", v: fmt(monthlyStatic), sub: "peak-provisioned", c: C.muted },
     { k: "SAVED / 30-DAY", v: fmt(savedMo), sub: `${cost.savings_pct}% lower spend`, c: C.green },
+    { k: "PLAYER IMPACT", v: String(impacted), sub: dropped ? `${dropped} dropped, ${impacted - dropped} migrated` : "0 dropped — all migrated", c: dropped ? "#f0743a" : C.green },
   ];
 
   const regions = snap.region_forecast;
@@ -38,7 +42,7 @@ export default function CostAnalytics() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14 }}>
         {cards.map((m) => (
           <div key={m.k} className="panel" style={{ padding: 16 }}>
             <div className="k-label">{m.k}</div>

@@ -22,7 +22,7 @@ from forecast_model import ForecastModel  # type: ignore
 from anomaly_model import AnomalyModel  # type: ignore
 
 from app import config as C
-from app.services import scheduler_ai, scheduler_static, consolidation, k8s_executor
+from app.services import scheduler_ai, scheduler_static, k8s_executor, session_guard
 from app.services.cost import CostTracker
 from app.core.state import STORE
 
@@ -82,6 +82,11 @@ class Engine:
 
         # predictive node parking (AI mode only): node_id -> {"reason","since"}
         self.offline: dict[str, dict] = {}
+        # session-safety draining (AI mode only): node_id -> {"since"} —
+        # matches finishing naturally before a park takes effect
+        self.draining: dict[str, dict] = {}
+        self.guard_stats = {"players_migrated": 0, "players_dropped": 0,
+                             "blocked_actions": 0, "safe_drains": 0}
 
         # optional real-cluster execution (opt-in via K8S_ENABLED=1). Defensive:
         # None when disabled, and a no-op executor if no cluster is reachable —
@@ -104,6 +109,7 @@ class Engine:
                 # static never consolidates or health-drains — switching to it
                 # brings the whole fleet back online immediately.
                 self.offline = {}
+                self.draining = {}
             self.mode = mode
         if scenario in ("steady", "peak", "spike"):
             self.scenario = scenario
@@ -129,19 +135,25 @@ class Engine:
 
     # ------------------------------------------------------------------- tick
     def _tick(self):
-        # age currently-offline nodes before deciding anything new this tick
+        # age currently-offline / currently-draining nodes before deciding
+        # anything new this tick
         for v in self.offline.values():
             v["since"] += 1
+        for v in self.draining.values():
+            v["since"] += 1
 
-        # offline only has real effect in AI mode (static never consolidates;
-        # self.offline is guaranteed empty there — enforced in apply_control)
+        # offline/draining only have real effect in AI mode (static never
+        # consolidates or guards; both are guaranteed empty there — enforced
+        # in apply_control)
         offline_ids = set(self.offline.keys()) if self.mode == "ai" else set()
         repairing_ids = {nid for nid, v in self.offline.items() if v["reason"] == "repair"} \
             if self.mode == "ai" else set()
+        draining_ids = set(self.draining.keys()) if self.mode == "ai" else set()
         active_hint = len(ROSTER) - len(offline_ids)
 
         applied = self._last_rerouted if self.mode == "ai" else set()
         recs = self.sim.tick(rerouted=applied, offline=offline_ids, repairing=repairing_ids,
+                             draining=draining_ids,
                              active_count=active_hint if active_hint else None)
         t = self.sim.t
         demand = self.sim.demand()
@@ -189,6 +201,12 @@ class Engine:
             fsess = int(round(max(0.0, float(fsess_batch[j]))))
             risk = float(risk_batch[j])
             status = C.status_for(rec["cpu_pct"], rec["latency_ms"], risk)
+            if spec.node_id in draining_ids:
+                # session guard: stop routing new matches here while existing
+                # ones finish — excludes this node from scheduler_ai's
+                # placement pool and consolidation's park candidates for
+                # free, since both already filter on status == "healthy".
+                status = "draining"
             total_forecast += fsess
             total_sessions += rec["active_sessions"]
             nodes[i] = {
@@ -215,9 +233,28 @@ class Engine:
         # NEXT tick (mirrors how `rerouted` feedback already applies with a
         # one-tick lag). Folded into this tick's AI decision batch.
         if self.mode == "ai":
-            self.offline, park_decisions = consolidation.plan_offline(
-                nodes, target_active=cap_ai, current_offline=self.offline, timestamp=ts)
-            dec_ai = dec_ai + park_decisions
+            self.offline, self.draining, guard_decisions, migration_events = \
+                session_guard.guard_offline_plan(
+                    nodes, target_active=cap_ai, current_offline=self.offline,
+                    current_draining=self.draining, timestamp=ts)
+            dec_ai = dec_ai + guard_decisions
+
+            # carry out the guard's migrate-or-finish verdicts against the
+            # simulator's real Match objects, and tally player impact.
+            for ev in migration_events:
+                if ev["kind"] == "migrate":
+                    matches = self.sim.get_matches(ev["source"])
+                    leftover = self.sim.transplant_matches(ev["dest"], matches)
+                    self.sim.clear_matches(ev["source"])
+                    dropped = sum(m.players for m in leftover)
+                    self.guard_stats["players_migrated"] += ev["players"] - dropped
+                    self.guard_stats["players_dropped"] += dropped
+                else:  # "finish" — no capacity anywhere, players counted as impacted
+                    self.sim.clear_matches(ev["source"])
+                    self.guard_stats["players_dropped"] += ev["players"]
+            self.guard_stats["blocked_actions"] += sum(
+                1 for d in guard_decisions if d["label"] == session_guard.GUARD_LABEL)
+            self.guard_stats["safe_drains"] += len(migration_events)
 
             # orchestrator-native execution: mirror AI capacity onto real pods.
             # Rate-limited inside reconcile(); a no-op when K8s is off/unreachable.
@@ -266,7 +303,7 @@ class Engine:
 
     # --------------------------------------------------------------- snapshot
     def _snapshot(self, nodes, demand, forecast_peak, predicted, cap_ai, cap_static, t, ts):
-        counts = {k: 0 for k in ("healthy", "warning", "degraded", "critical", "offline")}
+        counts = {k: 0 for k in ("healthy", "warning", "degraded", "critical", "offline", "draining")}
         sess = lat = cpu = mem = risk_sum = risk_max = 0
         for n in nodes:
             counts[n["status"]] += 1
@@ -313,6 +350,13 @@ class Engine:
                 "avg_active_ai": energy["avg_active_ai"],
                 "avg_active_static": energy["avg_active_static"],
                 "energy_saved_pct": energy["energy_saved_pct"],
+                "draining_nodes": len(self.draining),
+                "players_migrated": self.guard_stats["players_migrated"],
+                "players_dropped": self.guard_stats["players_dropped"],
+                "players_impacted": self.guard_stats["players_migrated"]
+                                     + self.guard_stats["players_dropped"],
+                "blocked_scaledowns": self.guard_stats["blocked_actions"],
+                "safe_drains": self.guard_stats["safe_drains"],
             },
             "alerts": list(self.alerts),
             "region_forecast": region_forecast,

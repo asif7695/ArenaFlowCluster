@@ -1,6 +1,6 @@
 // Lightweight client-side mock so the dashboard renders before the backend is
 // up (or with NEXT_PUBLIC_USE_MOCK=1). Schema-valid, not physically accurate.
-import type { NodeView, Status } from "./types";
+import type { NodeView, Status, Decision } from "./types";
 
 const ROWS = "ABCDEFGH";
 const REGIONS = ["us-east-1", "eu-west-1", "ap-south-1", "us-west-2"];
@@ -22,6 +22,11 @@ function statusFor(cpu: number, lat: number, risk: number): Status {
 // matrix cells even without a live backend to drive real consolidation.
 const PARK_FROM_INDEX = 38;
 
+// One node is shown draining — the Session Safety Guard blocked its park
+// because it still holds a live match — so the mock also exercises the
+// "draining" matrix color without a live backend.
+const DRAINING_INDEX = 37;
+
 function nodes(t: number): NodeView[] {
   const out: NodeView[] = [];
   const demand = 52 + 24 * Math.sin(t / 13) + 8 * Math.sin(t / 4);
@@ -34,6 +39,14 @@ function nodes(t: number): NodeView[] {
         capacity: cap, cpu_pct: 2, mem_pct: 6, active_sessions: 0, latency_ms: 4,
         forecast_sessions_next_5min: 0, failure_risk_score: 0, status: "offline",
         offline_reason: "park",
+      });
+      continue;
+    }
+    if (i === DRAINING_INDEX) {
+      out.push({
+        node_id: `node-${i}`, label: `${ROWS[r]}${c + 1}`, region: regionFor(r, c),
+        capacity: cap, cpu_pct: 24, mem_pct: 32, active_sessions: 9, latency_ms: 22,
+        forecast_sessions_next_5min: 0, failure_risk_score: 0.05, status: "draining",
       });
       continue;
     }
@@ -53,7 +66,7 @@ function nodes(t: number): NodeView[] {
 }
 
 function counts(ns: NodeView[]) {
-  const cc = { healthy: 0, warning: 0, degraded: 0, critical: 0, offline: 0 };
+  const cc = { healthy: 0, warning: 0, degraded: 0, critical: 0, offline: 0, draining: 0 };
   ns.forEach((n) => (cc[n.status] += 1));
   return cc;
 }
@@ -79,13 +92,15 @@ function buildSnapshot(T: number) {
   const seriesAI = Array.from({ length: 24 }, (_, k) => +(38 * 0.85 * (T - 24 + k)).toFixed(1));
   const seriesS = Array.from({ length: 24 }, (_, k) => +(58 * 0.85 * (T - 24 + k)).toFixed(1));
   const savings = 34;
-  const decAI = [
+  const decAI: Decision[] = [
     { timestamp: "", action: "place", label: "PLACE", target_node: "A6", reason: "placed new session on A6 — lowest predicted 5-min load (12 sessions)", confidence: 95, mode: "ai" },
     { timestamp: "", action: "route_away", label: "REROUTE", target_node: "D4", reason: "failure risk 78% on D4 — steering new matches away before it degrades", confidence: 92, mode: "ai" },
+    { timestamp: "", action: "scale_down", label: "GUARD", target_node: "F3", reason: "F3 has 9 active players — blocking scale-down, draining instead of parking", confidence: 90, mode: "ai", outcome: "blocked", players: 9 },
+    { timestamp: "", action: "scale_down", label: "DRAIN", target_node: "C6", reason: "failure risk 81% on C6 — draining offline for repair — migrating 14 players live to D2", confidence: 92, mode: "ai", outcome: "migrated", players: 14 },
     { timestamp: "", action: "scale_down", label: "PARK", target_node: "H8", reason: "demand low — parking H8 to rest (predicted 2 sessions)", confidence: 80, mode: "ai" },
     { timestamp: "", action: "scale_up", label: "SCALE↑", target_node: "cluster", reason: "forecast demand +12 in 5min exceeds current capacity — pre-warming", confidence: 88, mode: "ai" },
   ];
-  const decS = [
+  const decS: Decision[] = [
     { timestamp: "", action: "scale_up", label: "SCALE↑", target_node: "G2", reason: "CPU 81% crossed 80% threshold on G2 — reactive scale-out", confidence: 100, mode: "static" },
   ];
   const alerts = ns
@@ -108,6 +123,8 @@ function buildSnapshot(T: number) {
       avg_cpu: avgCpu, avg_mem: Math.round(avgCpu * 0.82 + 12), avg_risk: 12, max_risk: 90,
       healthy: cc.healthy + cc.warning, savings_pct: savings,
       nodes_rested: cc.offline, avg_active_ai: 38, avg_active_static: 58, energy_saved_pct: 34,
+      draining_nodes: cc.draining, players_migrated: 14, players_dropped: 0,
+      players_impacted: 14, blocked_scaledowns: 3, safe_drains: 1,
     },
     alerts, region_forecast,
     scale_log: decAI.filter((d) => d.action.startsWith("scale")),

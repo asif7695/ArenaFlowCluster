@@ -1,4 +1,4 @@
-export type Status = "healthy" | "warning" | "degraded" | "critical" | "offline";
+export type Status = "healthy" | "warning" | "degraded" | "critical" | "offline" | "draining";
 export type Mode = "ai" | "static";
 export type Scenario = "steady" | "peak" | "spike";
 
@@ -26,6 +26,10 @@ export interface Decision {
   reason: string;
   confidence: number;
   mode: Mode;
+  /** Session Safety Guard verdict, present on GUARD/DRAIN/PARK-after-drain decisions. */
+  outcome?: "blocked" | "drained" | "migrated" | "finished";
+  /** Player count the guard's verdict applied to (0 when nothing was affected). */
+  players?: number;
 }
 
 export interface Alert {
@@ -71,6 +75,13 @@ export interface Summary {
   avg_active_ai: number;
   avg_active_static: number;
   energy_saved_pct: number;
+  /** Session Safety and Scale-Down Guard — live-match protection metrics. */
+  draining_nodes: number;
+  players_migrated: number;
+  players_dropped: number;
+  players_impacted: number;
+  blocked_scaledowns: number;
+  safe_drains: number;
 }
 
 export interface Counts {
@@ -79,6 +90,7 @@ export interface Counts {
   degraded: number;
   critical: number;
   offline: number;
+  draining: number;
 }
 
 /** Live real-cluster execution state (GET /k8s). enabled:false when K8S_ENABLED unset. */

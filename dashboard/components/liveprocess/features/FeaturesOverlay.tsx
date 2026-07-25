@@ -11,11 +11,13 @@ import ForecastCard from "./cards/ForecastCard";
 import SelfHealCard from "./cards/SelfHealCard";
 import EnergyCard from "./cards/EnergyCard";
 import ShowdownCard from "./cards/ShowdownCard";
+import SafetyGuardCard from "./cards/SafetyGuardCard";
 
 const FEATURES = [
   { id: "forecast", icon: "📈", title: "Predictive Forecasting", hook: "See demand 5 minutes before it arrives.", accent: C.accent3, Comp: ForecastCard },
   { id: "selfheal", icon: "🛠", title: "Failure Self-Healing", hook: "Detect, drain, repair, and wake failing nodes.", accent: "#f2c14e", Comp: SelfHealCard },
   { id: "energy", icon: "🌙", title: "Energy Saving", hook: "Park idle nodes to rest — wake them ahead of demand.", accent: C.blue, Comp: EnergyCard },
+  { id: "guard", icon: "🛡", title: "Session Safety Guard", hook: "Never drop a live match — migrate or finish, always recorded.", accent: "#f2c14e", Comp: SafetyGuardCard },
   { id: "showdown", icon: "⚔", title: "AI vs Static + Live K8s", hook: "Pull real levers and watch the two diverge.", accent: C.green, Comp: ShowdownCard },
 ];
 const AUTO_MS = 9000;
