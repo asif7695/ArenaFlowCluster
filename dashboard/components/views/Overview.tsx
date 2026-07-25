@@ -7,7 +7,7 @@ import type { Status } from "@/lib/types";
 import Spark from "../charts/Spark";
 
 const REGIONS = ["us-east-1", "eu-west-1", "ap-south-1", "us-west-2"];
-const LEGEND: Status[] = ["healthy", "warning", "degraded", "critical"];
+const LEGEND: Status[] = ["healthy", "warning", "degraded", "critical", "draining", "offline"];
 
 export default function Overview() {
   const { snap } = useDash();
